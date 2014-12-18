@@ -2,7 +2,6 @@ package bufferedwriter
 
 import (
 	"os"
-	"time"
 )
 
 type Configuration struct {
@@ -12,7 +11,6 @@ type Configuration struct {
 	temp       string
 	path       string
 	prefix     string
-	timeout    time.Duration
 	permission os.FileMode
 }
 
@@ -24,7 +22,6 @@ func Configure() *Configuration {
 		queueSize:  1024,
 		path:       os.TempDir(),
 		temp:       os.TempDir(),
-		timeout:    time.Millisecond * 5,
 	}
 }
 
@@ -61,12 +58,6 @@ func (c *Configuration) Temp(temp string) *Configuration {
 // A prefix to add to file names ("")
 func (c *Configuration) Prefix(prefix string) *Configuration {
 	c.prefix = prefix
-	return c
-}
-
-// How long to wait for a worker before dropping a message (5ms)
-func (c *Configuration) Timeout(timeout time.Duration) *Configuration {
-	c.timeout = timeout
 	return c
 }
 

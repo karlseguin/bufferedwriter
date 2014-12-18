@@ -2,7 +2,6 @@ package bufferedwriter
 
 import (
 	"errors"
-	"time"
 )
 
 var (
@@ -36,7 +35,7 @@ func (m *Master) Write(data []byte) (int, error) {
 	select {
 	case m.channel <- data:
 		return len(data), nil
-	case <-time.After(m.timeout):
+	default:
 		return 0, TimeoutErr
 	}
 }

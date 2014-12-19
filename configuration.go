@@ -11,7 +11,6 @@ type Configuration struct {
 	temp       string
 	path       string
 	prefix     string
-	permission os.FileMode
 }
 
 func Configure() *Configuration {
@@ -58,11 +57,5 @@ func (c *Configuration) Temp(temp string) *Configuration {
 // A prefix to add to file names ("")
 func (c *Configuration) Prefix(prefix string) *Configuration {
 	c.prefix = prefix
-	return c
-}
-
-// The permission of the final file (0400)
-func (c *Configuration) Permission(permission os.FileMode) *Configuration {
-	c.permission = permission
 	return c
 }

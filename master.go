@@ -42,6 +42,6 @@ func (m *Master) Write(data []byte) (int, error) {
 
 func (m *Master) Flush() {
 	for _, w := range m.Workers {
-		w.Save()
+		go w.Flush()
 	}
 }

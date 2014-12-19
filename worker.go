@@ -5,9 +5,11 @@ import (
 	"os"
 	"strconv"
 	"time"
+	"sync"
 )
 
 type Worker struct {
+	sync.Mutex
 	length     int
 	data       []byte
 	capacity   int
@@ -15,6 +17,7 @@ type Worker struct {
 	fileTemp   string
 	permission os.FileMode
 	channel    chan []byte
+	flush      int32
 }
 
 func NewWorker(id int, channel chan []byte, config *Configuration) *Worker {
@@ -22,7 +25,6 @@ func NewWorker(id int, channel chan []byte, config *Configuration) *Worker {
 	w := &Worker{
 		channel:    channel,
 		capacity:   config.size,
-		permission: config.permission,
 		data:       make([]byte, config.size),
 		fileRoot:   config.path,
 		fileTemp:   config.temp,
@@ -49,23 +51,33 @@ func (w *Worker) work() {
 }
 
 func (w *Worker) process(data []byte) {
+	w.Lock()
+	defer w.Unlock()
+
 	l := len(data)
 	if l > w.capacity {
-		log.Println("bufferedwriter dropped large message")
+		log.Println("bufferedwriter dropped large message", l)
 		return
 	}
 	if l > w.capacity-w.length {
-		w.Save()
+		w.save()
 	}
 	n := copy(w.data[w.length:], data)
 	if n != l {
+		// can this happen?
 		log.Println("bufferedwriter faile to copy full message")
 		return
 	}
 	w.length += n
 }
 
-func (w *Worker) Save() {
+func (w *Worker) Flush() {
+	w.Lock()
+	defer w.Unlock()
+	w.save()
+}
+
+func (w *Worker) save() {
 	if w.length == 0 {
 		return
 	}
@@ -83,5 +95,4 @@ func (w *Worker) Save() {
 		log.Printf("bufferedwriter failed to rename %v to %v. Error: %v\n", w.fileTemp, target, err)
 		return
 	}
-	os.Chmod(target, w.permission)
 }

@@ -2,6 +2,7 @@ package bufferedwriter
 
 import (
 	"errors"
+	"sync"
 )
 
 var (
@@ -41,7 +42,10 @@ func (m *Master) Write(data []byte) (int, error) {
 }
 
 func (m *Master) Flush() {
+	wg := new(sync.WaitGroup)
+	wg.Add(len(m.Workers))
 	for _, w := range m.Workers {
-		go w.Flush()
+		go w.Flush(wg)
 	}
+	wg.Wait()
 }

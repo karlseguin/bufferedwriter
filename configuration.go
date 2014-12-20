@@ -5,19 +5,18 @@ import (
 )
 
 type Configuration struct {
-	size       int
-	workers    int
-	queueSize  int
-	temp       string
-	path       string
-	prefix     string
+	size      int
+	workers   int
+	queueSize int
+	temp      string
+	path      string
+	prefix    string
 }
 
 func Configure() *Configuration {
 	return &Configuration{
 		workers:    8,
 		size:       8192,
-		permission: 0400,
 		queueSize:  1024,
 		path:       os.TempDir(),
 		temp:       os.TempDir(),

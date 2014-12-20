@@ -4,8 +4,8 @@ import (
 	"log"
 	"os"
 	"strconv"
-	"time"
 	"sync"
+	"time"
 )
 
 type Worker struct {
@@ -23,11 +23,11 @@ type Worker struct {
 func NewWorker(id int, channel chan []byte, config *Configuration) *Worker {
 	idString := strconv.Itoa(id)
 	w := &Worker{
-		channel:    channel,
-		capacity:   config.size,
-		data:       make([]byte, config.size),
-		fileRoot:   config.path,
-		fileTemp:   config.temp,
+		channel:  channel,
+		capacity: config.size,
+		data:     make([]byte, config.size),
+		fileRoot: config.path,
+		fileTemp: config.temp,
 	}
 
 	if w.fileRoot[len(w.fileRoot)-1:] != "/" {
@@ -71,9 +71,10 @@ func (w *Worker) process(data []byte) {
 	w.length += n
 }
 
-func (w *Worker) Flush() {
+func (w *Worker) Flush(wg *sync.WaitGroup) {
 	w.Lock()
 	defer w.Unlock()
+	defer wg.Done()
 	w.save()
 }
 

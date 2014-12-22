@@ -16,11 +16,11 @@ type Worker struct {
 	fileRoot   string
 	fileTemp   string
 	permission os.FileMode
-	channel    chan []byte
+	channel    chan BytesCloser
 	flush      int32
 }
 
-func NewWorker(id int, channel chan []byte, config *Configuration) *Worker {
+func NewWorker(id int, channel chan BytesCloser, config *Configuration) *Worker {
 	idString := strconv.Itoa(id)
 	w := &Worker{
 		channel:  channel,
@@ -50,9 +50,12 @@ func (w *Worker) work() {
 	}
 }
 
-func (w *Worker) process(data []byte) {
+func (w *Worker) process(message BytesCloser) {
+	defer message.Close()
 	w.Lock()
 	defer w.Unlock()
+
+	data := message.Bytes()
 
 	l := len(data)
 	if l > w.capacity {

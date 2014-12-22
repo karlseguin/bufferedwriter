@@ -9,14 +9,19 @@ var (
 	TimeoutErr = errors.New("timeout")
 )
 
+type BytesCloser interface {
+	Bytes() []byte
+	Close() error
+}
+
 type Master struct {
 	*Configuration
-	channel chan []byte
+	channel chan BytesCloser
 	Workers []*Worker
 }
 
 func New(config *Configuration) *Master {
-	channel := make(chan []byte, config.queueSize)
+	channel := make(chan BytesCloser, config.queueSize)
 	master := &Master{
 		channel:       channel,
 		Configuration: config,
@@ -32,14 +37,15 @@ func New(config *Configuration) *Master {
 	return master
 }
 
-func (m *Master) Write(data []byte) (int, error) {
+func (m *Master) Write(message BytesCloser) error {
 	select {
-	case m.channel <- data:
-		return len(data), nil
+	case m.channel <- message:
+		return nil
 	default:
-		return 0, TimeoutErr
+		return TimeoutErr
 	}
 }
+
 
 func (m *Master) Flush() {
 	wg := new(sync.WaitGroup)

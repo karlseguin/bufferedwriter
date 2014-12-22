@@ -34,27 +34,27 @@ func (_ WorkerTests) GeneratesTheCorrectPathsWithPrefix() {
 }
 
 func (_ WorkerTests) BuffersWritesInMemory() {
-	expected := []byte("There ain't no such thing as a free lunch")
+	expected := "There ain't no such thing as a free lunch"
 	w := NewWorker(1, nil, testConfig(100))
-	w.process(expected)
-	Expect(w.data[:len(expected)]).To.Equal(expected)
+	w.process(closer(expected))
+	Expect(w.data[:len(expected)]).To.Equal([]byte(expected))
 	assertNoIO()
 }
 
 func (_ WorkerTests) WriteExactSize() {
 	expected := "There ain't no such thing as a free lunch"
 	w := NewWorker(1, nil, testConfig(len([]byte(expected))))
-	w.process([]byte(expected))
-	w.process([]byte("next"))
+	w.process(closer(expected))
+	w.process(closer("next"))
 	assertFile(12, 22, expected, ".log")
 	Expect(w.length).To.Equal(4)
 }
 
 func (_ WorkerTests) HandleMultipleFlushes() {
 	w := NewWorker(1, nil, testConfig(5))
-	w.process([]byte("aaaa"))
-	w.process([]byte("bbbbb"))
-	w.process([]byte("cccc"))
+	w.process(closer("aaaa"))
+	w.process(closer("bbbbb"))
+	w.process(closer("cccc"))
 	files := testFiles(".log")
 	assertContent(files[0], 12, 22, "aaaa")
 	assertContent(files[1], 12, 22, "bbbbb")
@@ -100,4 +100,20 @@ func testFiles(extension string) []string {
 		}
 	}
 	return matches
+}
+
+func closer(data string) BytesCloser {
+	return &BC{bytes: []byte(data)}
+}
+
+type BC struct {
+	bytes []byte
+}
+
+func (b *BC) Bytes() []byte {
+	return b.bytes
+}
+
+func (b *BC) Close() error {
+	return nil
 }

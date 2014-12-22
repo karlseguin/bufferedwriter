@@ -37,9 +37,9 @@ func NewWorker(id int, channel chan []byte, config *Configuration) *Worker {
 	if w.fileTemp[len(w.fileTemp)-1:] != "/" {
 		w.fileTemp += "/"
 	}
-
-	w.fileRoot += config.prefix + idString + "_"
-	w.fileTemp += config.prefix + idString + ".tmp"
+	pid := strconv.Itoa(os.Getpid())
+	w.fileRoot += config.prefix + idString + "_" + pid + "_"
+	w.fileTemp += config.prefix + idString + "_" + pid + ".tmp"
 	return w
 }
 

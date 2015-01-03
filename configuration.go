@@ -2,6 +2,7 @@ package bufferedwriter
 
 import (
 	"os"
+	"time"
 )
 
 type Configuration struct {
@@ -11,15 +12,17 @@ type Configuration struct {
 	temp      string
 	path      string
 	prefix    string
+	forced    time.Duration
 }
 
 func Configure() *Configuration {
 	return &Configuration{
-		workers:    8,
-		size:       8192,
-		queueSize:  1024,
-		path:       os.TempDir(),
-		temp:       os.TempDir(),
+		workers:   8,
+		size:      8192,
+		queueSize: 1024,
+		path:      os.TempDir(),
+		temp:      os.TempDir(),
+		forced:    0,
 	}
 }
 
@@ -56,5 +59,11 @@ func (c *Configuration) Temp(temp string) *Configuration {
 // A prefix to add to file names ("")
 func (c *Configuration) Prefix(prefix string) *Configuration {
 	c.prefix = prefix
+	return c
+}
+
+// Set a minimum time between allowed disk flushes (0 - no forced flushes)
+func (c *Configuration) Forced(duration time.Duration) *Configuration {
+	c.forced = duration
 	return c
 }

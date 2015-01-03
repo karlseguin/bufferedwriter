@@ -4,9 +4,10 @@ import (
 	. "github.com/karlseguin/expect"
 	"io/ioutil"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
-	"strconv"
+	"time"
 )
 
 type WorkerTests struct{}
@@ -46,7 +47,7 @@ func (_ WorkerTests) WriteExactSize() {
 	w := NewWorker(1, nil, testConfig(len([]byte(expected))))
 	w.process(closer(expected))
 	w.process(closer("next"))
-	assertFile(12, 22, expected, ".log")
+	assertFile(expected, ".log")
 	Expect(w.length).To.Equal(4)
 }
 
@@ -56,9 +57,20 @@ func (_ WorkerTests) HandleMultipleFlushes() {
 	w.process(closer("bbbbb"))
 	w.process(closer("cccc"))
 	files := testFiles(".log")
-	assertContent(files[0], 12, 22, "aaaa")
-	assertContent(files[1], 12, 22, "bbbbb")
+	assertContent(files[0], "aaaa")
+	assertContent(files[1], "bbbbb")
 	Expect(w.length).To.Equal(4)
+}
+
+func (_ WorkerTests) ForcesAFlush() {
+	c := make(chan BytesCloser)
+	w := NewWorker(1, c, testConfig(10).Forced(time.Millisecond*5))
+	go w.work()
+	c <- closer("aa123")
+	time.Sleep(time.Millisecond * 10)
+	files := testFiles(".log")
+	assertContent(files[0], "aa123")
+	Expect(w.length).To.Equal(0)
 }
 
 func (_ WorkerTests) Each(test func()) {
@@ -76,16 +88,16 @@ func assertNoIO() {
 	Expect(len(files)).To.Equal(0)
 }
 
-func assertFile(time byte, userId byte, expected string, extension string) {
+func assertFile(expected string, extension string) {
 	tmp := testFiles(extension)
 	if len(tmp) != 1 {
 		Fail("Expecting 1 %v file, got %d", extension, len(tmp))
 	} else {
-		assertContent(tmp[0], time, userId, expected)
+		assertContent(tmp[0], expected)
 	}
 }
 
-func assertContent(file string, time byte, userId byte, expected string) {
+func assertContent(file string, expected string) {
 	data, _ := ioutil.ReadFile("/tmp/bw/" + file)
 	Expect(string(data)).To.Equal(expected)
 }

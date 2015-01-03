@@ -18,6 +18,8 @@ type Worker struct {
 	permission os.FileMode
 	channel    chan BytesCloser
 	flush      int32
+	forced     time.Duration
+	timer      *time.Timer
 }
 
 func NewWorker(id int, channel chan BytesCloser, config *Configuration) *Worker {
@@ -28,6 +30,11 @@ func NewWorker(id int, channel chan BytesCloser, config *Configuration) *Worker 
 		data:     make([]byte, config.size),
 		fileRoot: config.path,
 		fileTemp: config.temp,
+		forced:   config.forced,
+	}
+
+	if w.forced != 0 {
+		w.timer = time.NewTimer(config.forced)
 	}
 
 	if w.fileRoot[len(w.fileRoot)-1:] != "/" {
@@ -45,8 +52,22 @@ func NewWorker(id int, channel chan BytesCloser, config *Configuration) *Worker 
 
 func (w *Worker) work() {
 	os.Remove(w.fileTemp)
+	if w.timer == nil {
+		for {
+			w.process(<-w.channel)
+		}
+	}
+
 	for {
-		w.process(<-w.channel)
+		select {
+		case message := <-w.channel:
+			w.process(message)
+		case <-w.timer.C:
+			println("flushing")
+			w.Lock()
+			w.save()
+			w.Unlock()
+		}
 	}
 }
 
@@ -83,6 +104,7 @@ func (w *Worker) Flush(wg *sync.WaitGroup) {
 
 func (w *Worker) save() {
 	if w.length == 0 {
+		w.resetTimer()
 		return
 	}
 	defer func() { w.length = 0 }()
@@ -99,4 +121,12 @@ func (w *Worker) save() {
 		log.Printf("bufferedwriter failed to rename %v to %v. Error: %v\n", w.fileTemp, target, err)
 		return
 	}
+	w.resetTimer()
+}
+
+func (w *Worker) resetTimer() {
+	if w.timer == nil {
+		return
+	}
+	w.timer.Reset(w.forced)
 }

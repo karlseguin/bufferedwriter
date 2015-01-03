@@ -46,7 +46,6 @@ func (m *Master) Write(message BytesCloser) error {
 	}
 }
 
-
 func (m *Master) Flush() {
 	wg := new(sync.WaitGroup)
 	wg.Add(len(m.Workers))

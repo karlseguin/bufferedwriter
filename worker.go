@@ -63,7 +63,6 @@ func (w *Worker) work() {
 		case message := <-w.channel:
 			w.process(message)
 		case <-w.timer.C:
-			println("flushing")
 			w.Lock()
 			w.save()
 			w.Unlock()

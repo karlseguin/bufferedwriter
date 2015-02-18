@@ -1,6 +1,7 @@
 package bufferedwriter
 
 import (
+	"io"
 	"log"
 	"os"
 	"strconv"
@@ -16,13 +17,13 @@ type Worker struct {
 	fileRoot   string
 	fileTemp   string
 	permission os.FileMode
-	channel    chan BytesCloser
+	channel    chan Byter
 	flush      int32
 	forced     time.Duration
 	timer      *time.Timer
 }
 
-func NewWorker(id int, channel chan BytesCloser, config *Configuration) *Worker {
+func NewWorker(id int, channel chan Byter, config *Configuration) *Worker {
 	idString := strconv.Itoa(id)
 	w := &Worker{
 		channel:  channel,
@@ -70,8 +71,10 @@ func (w *Worker) work() {
 	}
 }
 
-func (w *Worker) process(message BytesCloser) {
-	defer message.Close()
+func (w *Worker) process(message Byter) {
+	if closer, ok := message.(io.Closer); ok {
+		defer closer.Close()
+	}
 	w.Lock()
 	defer w.Unlock()
 

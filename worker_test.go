@@ -63,7 +63,7 @@ func (_ WorkerTests) HandleMultipleFlushes() {
 }
 
 func (_ WorkerTests) ForcesAFlush() {
-	c := make(chan BytesCloser)
+	c := make(chan Byter)
 	w := NewWorker(1, c, testConfig(10).Forced(time.Millisecond*5))
 	go w.work()
 	c <- closer("aa123")
@@ -114,7 +114,7 @@ func testFiles(extension string) []string {
 	return matches
 }
 
-func closer(data string) BytesCloser {
+func closer(data string) Byter {
 	return &BC{bytes: []byte(data)}
 }
 
